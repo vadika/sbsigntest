@@ -48,13 +48,22 @@ fi
 # Verify the key exists
 echo "Verifying key 'SecureBootKey' exists..."
 KEY_CHECK=$(curl -k -s -o /dev/null -w "%{http_code}" \
-    -H "X-API-Key: operator" \
-    -H "X-API-Password: ${NETHSM_OPERATOR_PASSWORD}" \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
     https://${NETHSM_HOST}:8443/api/v1/keys/SecureBootKey)
 
 if [[ "$KEY_CHECK" != "200" ]]; then
     echo "Error: Could not verify key 'SecureBootKey' exists (HTTP Status: $KEY_CHECK)"
     exit 1
+fi
+
+# If the key exists, get its details
+if [[ "$KEY_CHECK" == "200" ]]; then
+    echo "Getting key details..."
+    KEY_DETAILS=$(curl -k -s \
+        -H "Authorization: Bearer $AUTH_TOKEN" \
+        https://${NETHSM_HOST}:8443/api/v1/keys/SecureBootKey)
+    
+    echo "Key details: $KEY_DETAILS"
 fi
 
 echo "Key 'SecureBootKey' verified in NetHSM"
