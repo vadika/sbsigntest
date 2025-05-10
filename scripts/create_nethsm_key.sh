@@ -37,6 +37,14 @@ fi
 
 echo "Successfully authenticated with NetHSM"
 
+# List all users in NetHSM
+echo "Listing all users in NetHSM..."
+USERS_RESPONSE=$(curl -k -s \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
+    https://${NETHSM_HOST}:8443/api/v1/users)
+
+echo "NetHSM users: $USERS_RESPONSE"
+
 # Now generate the key using the token and the correct API endpoint
 RESPONSE=$(curl -k -s -w "%{http_code}" -X POST \
     -H "Authorization: Bearer $AUTH_TOKEN" \
