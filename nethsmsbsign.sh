@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -x
 
 # Check if NETHSM_HOST is set
 if [ -z "$NETHSM_HOST" ]; then
