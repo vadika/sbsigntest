@@ -4,21 +4,23 @@ set -x
 # Check if required environment variables are set
 if [ -z "$NETHSM_HOST" ]; then
     echo "Error: NETHSM_HOST environment variable is not set"
-    echo "Usage: NETHSM_HOST=your-nethsm-hostname NETHSM_ADMIN_PASSWORD=your-admin-password NETHSM_OPERATOR_PASSWORD=your-user-password ./nethsmsbsign.sh"
-    exit 1
-fi
-
-if [ -z "$NETHSM_ADMIN_PASSWORD" ]; then
-    echo "Error: NETHSM_ADMIN_PASSWORD environment variable is not set"
-    echo "Usage: NETHSM_HOST=your-nethsm-hostname NETHSM_ADMIN_PASSWORD=your-admin-password NETHSM_OPERATOR_PASSWORD=your-user-password ./nethsmsbsign.sh"
+    echo "Usage: NETHSM_HOST=your-nethsm-hostname NETHSM_OPERATOR_PASSWORD=your-password ./nethsmsbsign.sh"
     exit 1
 fi
 
 if [ -z "$NETHSM_OPERATOR_PASSWORD" ]; then
     echo "Error: NETHSM_OPERATOR_PASSWORD environment variable is not set"
-    echo "Usage: NETHSM_HOST=your-nethsm-hostname NETHSM_ADMIN_PASSWORD=your-admin-password NETHSM_OPERATOR_PASSWORD=your-user-password ./nethsmsbsign.sh"
+    echo "Usage: NETHSM_HOST=your-nethsm-hostname NETHSM_OPERATOR_PASSWORD=your-password ./nethsmsbsign.sh"
     exit 1
 fi
+
+# Verify NetHSM connectivity and authentication
+echo "Verifying NetHSM connectivity..."
+if ! curl -k -s -u "operator:${NETHSM_OPERATOR_PASSWORD}" https://${NETHSM_HOST}:8443/api/v1/keys > /dev/null; then
+    echo "Error: Could not connect to NetHSM or authentication failed"
+    exit 1
+fi
+echo "Successfully connected to NetHSM"
 
 # Install required packages
 # sudo apt-get update
