@@ -18,18 +18,34 @@ fi
 
 # Create a key in NetHSM
 echo "Creating key 'SecureBootKey' in NetHSM..."
+# First authenticate to get a token
+AUTH_RESPONSE=$(curl -k -s -X POST \
+    -H "Content-Type: application/json" \
+    -d "{\"username\": \"operator\", \"password\": \"${NETHSM_OPERATOR_PASSWORD}\"}" \
+    https://${NETHSM_HOST}:8443/api/v1/auth/login)
+
+# Extract the token
+AUTH_TOKEN=$(echo $AUTH_RESPONSE | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+
+if [ -z "$AUTH_TOKEN" ]; then
+    echo "Authentication failed. Check your NETHSM_OPERATOR_PASSWORD."
+    echo "Response: $AUTH_RESPONSE"
+    exit 1
+fi
+
+echo "Successfully authenticated with NetHSM"
+
+# Now generate the key using the token and the correct API endpoint
 RESPONSE=$(curl -k -s -w "%{http_code}" -X POST \
-    -H "X-API-Key: operator" \
-    -H "X-API-Password: ${NETHSM_OPERATOR_PASSWORD}" \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
     -H "Content-Type: application/json" \
     -d '{
-        "mechanisms": ["RSA_PKCS1_SHA256", "RSA_PKCS1_SHA384", "RSA_PKCS1_SHA512"],
+        "mechanisms": ["RSA_Signature_PKCS1", "RSA_Signature_PSS_SHA256", "RSA_Signature_PSS_SHA384", "RSA_Signature_PSS_SHA512"],
         "type": "RSA",
-        "keySize": 2048,
-        "id": "SecureBootKey",
-        "label": "Secure Boot Signing Key"
+        "length": 2048,
+        "id": "SecureBootKey"
     }' \
-    https://${NETHSM_HOST}:8443/api/v1/keys)
+    https://${NETHSM_HOST}:8443/api/v1/keys/generate)
 
 HTTP_CODE=${RESPONSE: -3}
 RESPONSE_BODY=${RESPONSE:0:${#RESPONSE}-3}

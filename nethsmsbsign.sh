@@ -70,7 +70,7 @@ openssl x509 -in secureboot.pem -outform DER -out secureboot.der
 cp /usr/lib/grub/x86_64-efi/monolithic/grubx64.efi ./test-unsigned.efi
 
 ../sbsigntools/src/sbsign --engine pkcs11 \
-    --key "pkcs12:object=SecureBootKey;type=private;pin-value=${NETHSM_OPERATOR_PASSWORD}" \
+    --key "pkcs11:object=SecureBootKey;type=private;pin-value=${NETHSM_OPERATOR_PASSWORD}" \
     --cert secureboot.pem \
     --output test-signed.efi \
     test-unsigned.efi
