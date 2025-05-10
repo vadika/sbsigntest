@@ -3,14 +3,21 @@
 
 set -e
 
+# Check if NETHSM_HOST is set
+if [ -z "$NETHSM_HOST" ]; then
+    echo "Error: NETHSM_HOST environment variable is not set"
+    echo "Usage: NETHSM_HOST=your-nethsm-hostname ./create_nethsm_key.sh"
+    exit 1
+fi
+
 # Check if NetHSM is accessible
-if ! curl -k -s https://nethsm:8443/api/v1/info > /dev/null; then
-    echo "Error: NetHSM is not accessible"
+if ! curl -k -s https://${NETHSM_HOST}:8443/api/v1/info > /dev/null; then
+    echo "Error: NetHSM at ${NETHSM_HOST} is not accessible"
     exit 1
 fi
 
 # Create a key in NetHSM
-echo "Creating key 'PK' in NetHSM..."
+echo "Creating key 'SecureBootKey' in NetHSM..."
 curl -k -X POST \
     -H "X-API-Key: operator" \
     -H "X-API-Password: ${NETHSM_OPERATOR_PASSWORD}" \
@@ -19,9 +26,9 @@ curl -k -X POST \
         "mechanisms": ["RSA_PKCS1_SHA256", "RSA_PKCS1_SHA384", "RSA_PKCS1_SHA512"],
         "type": "RSA",
         "keySize": 2048,
-        "id": "PK",
-        "label": "Primary Key"
+        "id": "SecureBootKey",
+        "label": "Secure Boot Signing Key"
     }' \
-    https://nethsm:8443/api/v1/keys
+    https://${NETHSM_HOST}:8443/api/v1/keys
 
-echo "Key 'PK' created successfully in NetHSM" 
+echo "Key 'SecureBootKey' created successfully in NetHSM"
