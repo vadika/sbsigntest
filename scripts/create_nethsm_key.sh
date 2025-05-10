@@ -24,6 +24,8 @@ AUTH_RESPONSE=$(curl -k -s -X POST \
     -d "{\"username\": \"operator\", \"password\": \"${NETHSM_OPERATOR_PASSWORD}\"}" \
     https://${NETHSM_HOST}:8443/api/v1/auth/login)
 
+echo ----- $AUTH_RESPONSE
+
 # Extract the token
 AUTH_TOKEN=$(echo $AUTH_RESPONSE | grep -o '"token":"[^"]*' | cut -d'"' -f4)
 
