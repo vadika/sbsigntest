@@ -25,7 +25,7 @@ pkcs11 = pkcs11_section
 [pkcs11_section]
 engine_id = pkcs11
 dynamic_path = /usr/lib/x86_64-linux-gnu/engines-1.1/pkcs11.so
-MODULE_PATH = /usr/lib/pkcs11/libnethsm-pkcs11.so
+MODULE_PATH = /usr/local/lib/libnethsm_pkcs11.so
 init = 0
 PIN = your-nethsm-pin
 EOF
@@ -38,7 +38,7 @@ export OPENSSL_CONF=~/nethsm-openssl.cnf
 openssl engine -t -c pkcs11
 
 # List available keys on NetHSM
-pkcs11-tool --module /usr/lib/pkcs11/libnethsm-pkcs11.so --login --pin your-nethsm-pin --list-objects
+pkcs11-tool --module /usr/local/lib/libnethsm_pkcs11.so --login --pin your-nethsm-pin --list-objects
 
 # Note: Key generation might be done through NetHSM's web interface or API
 # This is a placeholder - adjust according to NetHSM's specific requirements
