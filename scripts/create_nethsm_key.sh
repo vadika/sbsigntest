@@ -18,7 +18,7 @@ fi
 
 # Create a key in NetHSM
 echo "Creating key 'SecureBootKey' in NetHSM..."
-curl -k -X POST \
+RESPONSE=$(curl -k -s -w "%{http_code}" -X POST \
     -H "X-API-Key: operator" \
     -H "X-API-Password: ${NETHSM_OPERATOR_PASSWORD}" \
     -H "Content-Type: application/json" \
@@ -29,6 +29,32 @@ curl -k -X POST \
         "id": "SecureBootKey",
         "label": "Secure Boot Signing Key"
     }' \
-    https://${NETHSM_HOST}:8443/api/v1/keys
+    https://${NETHSM_HOST}:8443/api/v1/keys)
 
-echo "Key 'SecureBootKey' created successfully in NetHSM"
+HTTP_CODE=${RESPONSE: -3}
+RESPONSE_BODY=${RESPONSE:0:${#RESPONSE}-3}
+
+if [[ "$HTTP_CODE" == "201" ]]; then
+    echo "Key 'SecureBootKey' created successfully in NetHSM"
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    echo "Key 'SecureBootKey' already exists in NetHSM"
+else
+    echo "Failed to create key 'SecureBootKey' in NetHSM"
+    echo "HTTP Status Code: $HTTP_CODE"
+    echo "Response: $RESPONSE_BODY"
+    exit 1
+fi
+
+# Verify the key exists
+echo "Verifying key 'SecureBootKey' exists..."
+KEY_CHECK=$(curl -k -s -o /dev/null -w "%{http_code}" \
+    -H "X-API-Key: operator" \
+    -H "X-API-Password: ${NETHSM_OPERATOR_PASSWORD}" \
+    https://${NETHSM_HOST}:8443/api/v1/keys/SecureBootKey)
+
+if [[ "$KEY_CHECK" != "200" ]]; then
+    echo "Error: Could not verify key 'SecureBootKey' exists (HTTP Status: $KEY_CHECK)"
+    exit 1
+fi
+
+echo "Key 'SecureBootKey' verified in NetHSM"
