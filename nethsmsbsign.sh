@@ -1,10 +1,22 @@
 #!/bin/bash
 set -x
 
-# Check if NETHSM_HOST is set
+# Check if required environment variables are set
 if [ -z "$NETHSM_HOST" ]; then
     echo "Error: NETHSM_HOST environment variable is not set"
-    echo "Usage: NETHSM_HOST=your-nethsm-hostname ./nethsmsbsign.sh"
+    echo "Usage: NETHSM_HOST=your-nethsm-hostname NETHSM_ADMIN_PASSWORD=your-admin-password NETHSM_USER_PASSWORD=your-user-password ./nethsmsbsign.sh"
+    exit 1
+fi
+
+if [ -z "$NETHSM_ADMIN_PASSWORD" ]; then
+    echo "Error: NETHSM_ADMIN_PASSWORD environment variable is not set"
+    echo "Usage: NETHSM_HOST=your-nethsm-hostname NETHSM_ADMIN_PASSWORD=your-admin-password NETHSM_USER_PASSWORD=your-user-password ./nethsmsbsign.sh"
+    exit 1
+fi
+
+if [ -z "$NETHSM_USER_PASSWORD" ]; then
+    echo "Error: NETHSM_USER_PASSWORD environment variable is not set"
+    echo "Usage: NETHSM_HOST=your-nethsm-hostname NETHSM_ADMIN_PASSWORD=your-admin-password NETHSM_USER_PASSWORD=your-user-password ./nethsmsbsign.sh"
     exit 1
 fi
 
@@ -27,7 +39,7 @@ engine_id = pkcs11
 dynamic_path = /usr/lib/x86_64-linux-gnu/engines-1.1/pkcs11.so
 MODULE_PATH = /usr/local/lib/libnethsm_pkcs11.so
 init = 0
-PIN = your-nethsm-pin
+PIN = ${NETHSM_USER_PASSWORD}
 EOF
 
 # Set NetHSM environment variables
@@ -38,7 +50,7 @@ export OPENSSL_CONF=~/nethsm-openssl.cnf
 openssl engine -t -c pkcs11
 
 # List available keys on NetHSM
-pkcs11-tool --module /usr/local/lib/libnethsm_pkcs11.so --login --pin your-nethsm-pin --list-objects
+pkcs11-tool --module /usr/local/lib/libnethsm_pkcs11.so --login --pin ${NETHSM_USER_PASSWORD} --list-objects
 
 # Note: Key generation might be done through NetHSM's web interface or API
 # This is a placeholder - adjust according to NetHSM's specific requirements
@@ -47,7 +59,7 @@ echo "Press Enter to continue or Ctrl+C to abort"
 read
 
 # Create certificate
-openssl req -engine pkcs11 -keyform engine -key "pkcs11:object=SecureBootKey;type=private;pin-value=your-nethsm-pin" \
+openssl req -engine pkcs11 -keyform engine -key "pkcs11:object=SecureBootKey;type=private;pin-value=${NETHSM_USER_PASSWORD}" \
     -new -x509 -days 3650 -out secureboot.pem -sha256 \
     -subj "/C=US/O=Your Organization/CN=Secure Boot Signing Key"
 
@@ -58,7 +70,7 @@ openssl x509 -in secureboot.pem -outform DER -out secureboot.der
 cp /usr/lib/grub/x86_64-efi/monolithic/grubx64.efi ./test-unsigned.efi
 
 ../sbsigntools/src/sbsign --engine pkcs11 \
-    --key "pkcs11:object=SecureBootKey;type=private;pin-value=your-nethsm-pin" \
+    --key "pkcs11:object=SecureBootKey;type=private;pin-value=${NETHSM_USER_PASSWORD}" \
     --cert secureboot.pem \
     --output test-signed.efi \
     test-unsigned.efi
