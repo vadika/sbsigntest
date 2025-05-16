@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -e
 
 # Check if required environment variables are set
 if [ -z "$NETHSM_HOST" ]; then
@@ -46,13 +46,13 @@ EOF
 
 # Set NetHSM environment variables
 export NETHSM_PKCS11_URL="pkcs11:https://$NETHSM_HOST"
-export OPENSSL_CONF=~/nethsm-openssl.cnf
+export OPENSSL_CONF=~/openssl-nethsm.cnf
 
 # Test engine
 openssl engine -t -c pkcs11
 
 # List available keys on NetHSM
-pkcs11-tool --module /usr/local/lib/libnethsm_pkcs11.so --login --pin ${NETHSM_ADMIN_PASSWORD} --list-objects
+pkcs11-tool --module /usr/local/lib/libnethsm_pkcs11.so --login --pin ${NETHSM_OPERATOR_PASSWORD} --list-objects
 
 # Note: Key generation might be done through NetHSM's web interface or API
 # This is a placeholder - adjust according to NetHSM's specific requirements
@@ -61,7 +61,7 @@ echo "Press Enter to continue or Ctrl+C to abort"
 read
 
 # Create certificate
-openssl req -engine pkcs11 -keyform engine -key "pkcs11:object=SecureBootKey;type=private;pin-value=${NETHSM_ADMIN_PASSWORD}" \
+openssl req -engine pkcs11 -keyform engine -key "pkcs11:object=SecureBootKey;type=private;pin-value=${NETHSM_OPERATOR_PASSWORD}" \
     -new -x509 -days 3650 -out secureboot.pem -sha256 \
     -subj "/C=US/O=Your Organization/CN=Secure Boot Signing Key"
 
@@ -72,7 +72,7 @@ openssl x509 -in secureboot.pem -outform DER -out secureboot.der
 cp /usr/lib/grub/x86_64-efi/monolithic/grubx64.efi ./test-unsigned.efi
 
 ../sbsigntools/src/sbsign --engine pkcs11 \
-    --key "pkcs11:object=SecureBootKey;type=private;pin-value=${NETHSM_ADMIN_PASSWORD}" \
+    --key "pkcs11:object=SecureBootKey;type=private;pin-value=${NETHSM_OPERATOR_PASSWORD}" \
     --cert secureboot.pem \
     --output test-signed.efi \
     test-unsigned.efi
